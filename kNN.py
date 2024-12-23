@@ -209,3 +209,45 @@ def train_and_evaluate(preprocess_func, preprocess_name, train_df, test_df):
 
 # Train and evaluate
 train_and_evaluate(preprocess_images_with_optional_pca, "PCA applied images", train_df, test_df)
+
+from sklearn.model_selection import cross_val_score
+
+# Initialize lists to store cross-validation accuracies
+cv_accuracies = []
+
+# Define range of k-values
+k_values = range(1, 11)
+
+# Preprocess the data using the chosen target size
+target_size = (180, 180)  
+X_train = preprocess_images(train_df["filepaths"].values, target_size=target_size)
+y_train = LabelEncoder().fit_transform(train_df["labels"])
+
+# Standardize the feature vectors
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+
+# Loop through different k-values
+for k in k_values:
+    print(f'Evaluating cross-validation when k = {k}')
+    knn_model = KNeighborsClassifier(n_neighbors=k)
+    
+    # Perform cross-validation and calculate mean accuracy
+    cv_acc = cross_val_score(knn_model, X_train, y_train, cv=5, scoring='accuracy').mean()
+    cv_accuracies.append(cv_acc)
+
+# Plot Cross-Validation Accuracy vs. k
+plt.figure(figsize=(10, 6))
+plt.plot(k_values, cv_accuracies, label="Cross-Validation Accuracy", marker='o', color='green')
+plt.title("Cross-Validation Accuracy vs. Number of Neighbors (k)")
+plt.xlabel("Number of Neighbors (k)")
+plt.ylabel("Cross-Validation Accuracy")
+plt.xticks(ticks=k_values)  # Ensure all k-values are shown on the x-axis
+plt.legend()
+plt.grid()
+plt.show()
+
+# Find the best k-value
+best_k = k_values[np.argmax(cv_accuracies)]
+best_cv_accuracy = max(cv_accuracies)
+print(f"Best k-value: {best_k} with cross-validation accuracy: {best_cv_accuracy * 100:.2f}%")
